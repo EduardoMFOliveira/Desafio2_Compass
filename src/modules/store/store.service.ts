@@ -127,12 +127,9 @@ export class StoreService {
     }];
   }
 
-  /**
-   * Agora retorna todas as opções do Melhor Envio, sem filtro restritivo.
-   */
+
   private async getMelhorEnvioShipping(from: string, to: string): Promise<ShippingOptionDto[]> {
     try {
-      // retorna todas as modalidades (PAC, Sedex, etc.) já mapeadas pelo client
       return await this.melhorEnvio.calculateShipping(from, to);
     } catch (error) {
       this.logger.error(`Erro Melhor Envio: ${error.message}`);
