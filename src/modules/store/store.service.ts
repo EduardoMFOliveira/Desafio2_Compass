@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Store } from './entities/store.entity';
 import { ViaCEPClient } from '../../shared/clients/viacep.client';
-import { GoogleMapsClient } from '../../shared/clients/google-maps.client';
+import { GoogleMapsClient, Coordinates } from '../../shared/clients/google-maps.client';
 import { MelhorEnvioClient } from '../../shared/clients/melhor-envio.client';
 import { StoreResponseDto, ShippingOptionDto } from './dto/store-response.dto';
 import { ConfigService } from '@nestjs/config';
@@ -39,9 +39,7 @@ export class StoreService {
   }
 
   async findByState(uf: string): Promise<StoreResponseDto[]> {
-    const stores = await this.storeRepository.find({
-      where: { state: uf.toUpperCase() }
-    });
+    const stores = await this.storeRepository.find({ where: { state: uf.toUpperCase() } });
     return stores.map(store => this.mapToDto(store));
   }
 
@@ -53,26 +51,28 @@ export class StoreService {
 
     try {
       const address = await this.viaCEP.getAddress(cep);
+      // Usa getCoordinates para obter lat/lng do usuário
       const userCoords = await this.googleMaps.getCoordinates(`${address.street}, ${address.city}`);
-      const stores = await this.storeRepository.find();
 
+      const stores = await this.storeRepository.find();
       const results = await Promise.all(
         stores.map(async store => {
           try {
-            const origin = `${store.latitude},${store.longitude}`;
-            const destination = `${userCoords.lat},${userCoords.lng}`;
+            // Define origin e destination como objetos Coordinates
+            const origin: Coordinates = { lat: store.latitude, lng: store.longitude };
+            const destination: Coordinates = userCoords;
             const { distance, duration } = await this.googleMaps.calculateDistance(origin, destination);
 
             const isPDV = distance <= effectiveRadius;
-            const shippingOptions = isPDV 
-              ? this.getPDVShippingOptions(duration) 
+            const shippingOptions = isPDV
+              ? this.getPDVShippingOptions(duration)
               : await this.getMelhorEnvioShipping(store.postalCode, cep);
 
             return {
               ...this.mapToDto(store),
               distance: this.formatDistance(distance),
               type: isPDV ? 'PDV' : 'LOJA',
-              shippingOptions
+              shippingOptions,
             };
           } catch (error) {
             this.logger.error(`Erro processando loja ${store.id}: ${error.message}`);
@@ -97,7 +97,7 @@ export class StoreService {
       postalCode: store.postalCode,
       type: store.type,
       distance: '',
-      shippingOptions: []
+      shippingOptions: [],
     };
   }
 
@@ -110,7 +110,6 @@ export class StoreService {
   private getPDVShippingOptions(durationSeconds: number): ShippingOptionDto[] {
     const hours = durationSeconds / 3600;
     let deliveryTime: string;
-
     if (hours < 1) {
       deliveryTime = 'Menos de 1 hora';
     } else if (hours <= 8) {
@@ -119,25 +118,19 @@ export class StoreService {
       const days = Math.ceil(hours / 24);
       deliveryTime = `${days} dia${days > 1 ? 's' : ''} útil${days > 1 ? 'es' : ''}`;
     }
-
     return [{
       type: 'Motoboy',
       price: this.PDV_SHIPPING_PRICE,
-      deliveryTime
+      deliveryTime,
     }];
   }
-
 
   private async getMelhorEnvioShipping(from: string, to: string): Promise<ShippingOptionDto[]> {
     try {
       return await this.melhorEnvio.calculateShipping(from, to);
     } catch (error) {
       this.logger.error(`Erro Melhor Envio: ${error.message}`);
-      return [{
-        type: 'Indisponível',
-        price: 0,
-        deliveryTime: 'Consulte-nos'
-      }];
+      return [{ type: 'Indisponível', price: 0, deliveryTime: 'Consulte-nos' }];
     }
   }
 }

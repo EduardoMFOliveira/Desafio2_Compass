@@ -198,15 +198,7 @@
 <a name='L133'></a><a href='#L133'>133</a>
 <a name='L134'></a><a href='#L134'>134</a>
 <a name='L135'></a><a href='#L135'>135</a>
-<a name='L136'></a><a href='#L136'>136</a>
-<a name='L137'></a><a href='#L137'>137</a>
-<a name='L138'></a><a href='#L138'>138</a>
-<a name='L139'></a><a href='#L139'>139</a>
-<a name='L140'></a><a href='#L140'>140</a>
-<a name='L141'></a><a href='#L141'>141</a>
-<a name='L142'></a><a href='#L142'>142</a>
-<a name='L143'></a><a href='#L143'>143</a>
-<a name='L144'></a><a href='#L144'>144</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L136'></a><a href='#L136'>136</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
@@ -248,8 +240,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -261,12 +251,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -318,7 +310,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -327,9 +318,7 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -342,11 +331,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/modules/store/store.service.ts
@@ -355,7 +339,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Store } from './entities/store.entity';
 import { ViaCEPClient } from '../../shared/clients/viacep.client';
-import { GoogleMapsClient } from '../../shared/clients/google-maps.client';
+import { GoogleMapsClient, Coordinates } from '../../shared/clients/google-maps.client';
 import { MelhorEnvioClient } from '../../shared/clients/melhor-envio.client';
 import { StoreResponseDto, ShippingOptionDto } from './dto/store-response.dto';
 import { ConfigService } from '@nestjs/config';
@@ -390,9 +374,7 @@ export class StoreService {
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  async </span>findByState(uf: string): Promise&lt;StoreResponseDto[]&gt; {
-    const stores = <span class="cstat-no" title="statement not covered" >await this.storeRepository.find({</span>
-      where: { state: uf.toUpperCase() }
-    });
+    const stores = <span class="cstat-no" title="statement not covered" >await this.storeRepository.find({ where: { state: uf.toUpperCase() } });</span>
 <span class="cstat-no" title="statement not covered" >    return stores.map(<span class="fstat-no" title="function not covered" >store </span>=&gt; <span class="cstat-no" title="statement not covered" >this.mapToDto(store))</span>;</span>
   }
 &nbsp;
@@ -404,26 +386,28 @@ export class StoreService {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
       const address = <span class="cstat-no" title="statement not covered" >await this.viaCEP.getAddress(cep);</span>
+      // Usa getCoordinates para obter lat/lng do usuário
       const userCoords = <span class="cstat-no" title="statement not covered" >await this.googleMaps.getCoordinates(`${address.street}, ${address.city}`);</span>
-      const stores = <span class="cstat-no" title="statement not covered" >await this.storeRepository.find();</span>
 &nbsp;
+      const stores = <span class="cstat-no" title="statement not covered" >await this.storeRepository.find();</span>
       const results = <span class="cstat-no" title="statement not covered" >await Promise.all(</span>
         stores.map(<span class="fstat-no" title="function not covered" >async </span>store =&gt; {
 <span class="cstat-no" title="statement not covered" >          try {</span>
-            const origin = <span class="cstat-no" title="statement not covered" >`${store.latitude},${store.longitude}`;</span>
-            const destination = <span class="cstat-no" title="statement not covered" >`${userCoords.lat},${userCoords.lng}`;</span>
+            // Define origin e destination como objetos Coordinates
+            const origin: Coordinates = <span class="cstat-no" title="statement not covered" >{ lat: store.latitude, lng: store.longitude };</span>
+            const destination: Coordinates = <span class="cstat-no" title="statement not covered" >userCoords;</span>
             const { distance, duration } = <span class="cstat-no" title="statement not covered" >await this.googleMaps.calculateDistance(origin, destination);</span>
 &nbsp;
             const isPDV = <span class="cstat-no" title="statement not covered" >distance &lt;= effectiveRadius;</span>
-            const shippingOptions = <span class="cstat-no" title="statement not covered" >isPDV </span>
-              ? this.getPDVShippingOptions(duration) 
+            const shippingOptions = <span class="cstat-no" title="statement not covered" >isPDV</span>
+              ? this.getPDVShippingOptions(duration)
               : await this.getMelhorEnvioShipping(store.postalCode, cep);
 &nbsp;
 <span class="cstat-no" title="statement not covered" >            return {</span>
               ...this.mapToDto(store),
               distance: this.formatDistance(distance),
               type: isPDV ? 'PDV' : 'LOJA',
-              shippingOptions
+              shippingOptions,
             };
           } catch (error) {
 <span class="cstat-no" title="statement not covered" >            this.logger.error(`Erro processando loja ${store.id}: ${error.message}`);</span>
@@ -448,7 +432,7 @@ export class StoreService {
       postalCode: store.postalCode,
       type: store.type,
       distance: '',
-      shippingOptions: []
+      shippingOptions: [],
     };
   }
 &nbsp;
@@ -461,7 +445,6 @@ export class StoreService {
   private <span class="fstat-no" title="function not covered" >getPDVShippingOptions(</span>durationSeconds: number): ShippingOptionDto[] {
     const hours = <span class="cstat-no" title="statement not covered" >durationSeconds / 3600;</span>
     let deliveryTime: string;
-&nbsp;
 <span class="cstat-no" title="statement not covered" >    if (hours &lt; 1) {</span>
 <span class="cstat-no" title="statement not covered" >      deliveryTime = 'Menos de 1 hora';</span>
     } else <span class="cstat-no" title="statement not covered" >if (hours &lt;= 8) {</span>
@@ -470,36 +453,29 @@ export class StoreService {
       const days = <span class="cstat-no" title="statement not covered" >Math.ceil(hours / 24);</span>
 <span class="cstat-no" title="statement not covered" >      deliveryTime = `${days} dia${days &gt; 1 ? 's' : ''} útil${days &gt; 1 ? 'es' : ''}`;</span>
     }
-&nbsp;
 <span class="cstat-no" title="statement not covered" >    return [{</span>
       type: 'Motoboy',
       price: this.PDV_SHIPPING_PRICE,
-      deliveryTime
+      deliveryTime,
     }];
   }
-&nbsp;
 &nbsp;
   private <span class="fstat-no" title="function not covered" >async </span>getMelhorEnvioShipping(from: string, to: string): Promise&lt;ShippingOptionDto[]&gt; {
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      return await this.melhorEnvio.calculateShipping(from, to);</span>
     } catch (error) {
 <span class="cstat-no" title="statement not covered" >      this.logger.error(`Erro Melhor Envio: ${error.message}`);</span>
-<span class="cstat-no" title="statement not covered" >      return [{</span>
-        type: 'Indisponível',
-        price: 0,
-        deliveryTime: 'Consulte-nos'
-      }];
+<span class="cstat-no" title="statement not covered" >      return [{ type: 'Indisponível', price: 0, deliveryTime: 'Consulte-nos' }];</span>
     }
   }
-}
-&nbsp;</pre></td></tr></table></pre>
+}</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-04-21T13:37:53.951Z
+                at 2025-04-21T21:31:40.533Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

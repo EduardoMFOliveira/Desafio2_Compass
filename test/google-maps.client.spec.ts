@@ -23,6 +23,6 @@ describe('GoogleMapsClient', () => {
 
   it('should throw when no results', async () => {
     mockedAxios.get.mockResolvedValue({ data: { results: [] } });
-    await expect(client.getCoordinates('00000000')).rejects.toThrow('Endereço não encontrado');
+    await expect(client.getCoordinates('00000000')).rejects.toThrow('Falha ao obter coordenadas');
   });
 });

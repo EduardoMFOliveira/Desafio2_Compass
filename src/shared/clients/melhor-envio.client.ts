@@ -61,7 +61,7 @@ export class MelhorEnvioClient {
       });
 
       return this.parseShippingOptions(response.data);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Erro no cálculo de frete: ${error.message}`, error.stack);
       return [];
     }
@@ -88,11 +88,12 @@ export class MelhorEnvioClient {
           deliveryTime: deliveryStr,
         };
       })
-      .filter(option => 
-        option.price > 0 &&
-        option.deliveryTime !== 'Consulte-nos' &&
-        !option.type.includes('Indisponível')
+      .filter(
+        (option) =>
+          option.price > 0 &&
+          option.deliveryTime !== 'Consulte-nos' &&
+          !option.type.includes('Indisponível'),
       )
-      .sort((a, b) => a.price - b.price); // Ordena por preço ascendente
+      .sort((a, b) => a.price - b.price);
   }
 }

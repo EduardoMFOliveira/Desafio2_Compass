@@ -1,57 +1,65 @@
 // src/shared/clients/google-maps.client.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
+
+export interface Coordinates {
+  lat: number;
+  lng: number;
+}
 
 @Injectable()
 export class GoogleMapsClient {
-  private readonly logger = new Logger(GoogleMapsClient.name);
+  private readonly http: AxiosInstance;
   private readonly apiKey: string;
+  private readonly logger = new Logger(GoogleMapsClient.name);
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('GOOGLE_MAPS_API_KEY');
+    // Usa axios diretamente para que o jest.mock funcione
+    this.http = axios;
   }
 
-  async getCoordinates(address: string): Promise<{ lat: number; lng: number }> {
+  async getCoordinates(address: string): Promise<Coordinates> {
     try {
-      const response = await axios.get('https://maps.googleapis.com/maps/api/geocode/json', {
-        params: {
-          address: address,
-          key: this.apiKey
-        }
-      });
+      const { data } = await this.http.get(
+        'https://maps.googleapis.com/maps/api/geocode/json',
+        { params: { address, key: this.apiKey } }
+      );
 
-      if (!response.data.results[0]) {
-        throw new Error('Endereço não encontrado');
+      if (!data.results || data.results.length === 0) {
+        throw new Error('NO_RESULTS');
       }
-
-      return response.data.results[0].geometry.location;
-    } catch (error) {
+      const loc = data.results[0].geometry.location;
+      return { lat: loc.lat, lng: loc.lng };
+    } catch (error: any) {
       this.logger.error(`Erro no Google Maps: ${error.message}`);
-      throw new Error('Falha ao obter coordenadas');
+      if (error.message === 'NO_RESULTS') {
+        throw new Error('Falha ao obter coordenadas');
+      }
+      throw new Error('Falha temporária ao consultar Google Maps');
     }
   }
 
-  async calculateDistance(origin: string, destination: string): Promise<{distance: number, duration: number}> {
-    try {
-      const response = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
-        params: {
-          origins: origin,
-          destinations: destination,
-          key: this.apiKey,
-          units: 'metric',
-          mode: 'driving'
-        }
-      });
-
-      const element = response.data.rows[0].elements[0];
-      return {
-        distance: element.distance.value / 1000, // km
-        duration: element.duration.value // segundos
-      };
-    } catch (error) {
-      this.logger.error(`Erro no cálculo de distância: ${error.message}`);
-      throw new Error('Falha ao calcular distância');
-    }
+  async calculateDistance(
+    origin: Coordinates,
+    destination: Coordinates
+  ): Promise<{ distance: number; duration: number }> {
+    // Cálculo de distância Haversine
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRad(destination.lat - origin.lat);
+    const dLng = toRad(destination.lng - origin.lng);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(origin.lat)) *
+        Math.cos(toRad(destination.lat)) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const km = R * c;
+    // Duração aproximada assumindo 50 km/h (em segundos)
+    const duration = (km / 50) * 3600;
+    return { distance: km, duration };
   }
 }

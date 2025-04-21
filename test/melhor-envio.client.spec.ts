@@ -1,49 +1,46 @@
-import { ConfigService } from '@nestjs/config';
-import { MelhorEnvioClient, ShippingOption } from '../src/shared/clients/melhor-envio.client';
+import axios from 'axios';
+import { ViaCEPClient } from '../src/shared/clients/viacep.client';
 
 jest.mock('axios');
-import axios from 'axios';
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// For mocking http instance, override in test
+describe('ViaCEPClient', () => {
+  const client = new ViaCEPClient();
 
-describe('MelhorEnvioClient', () => {
-  const mockConfigService = {
-    get: jest.fn().mockImplementation((key: string) => {
-      switch (key) {
-        case 'MELHOR_ENVIO_BASE_URL': return 'https://api.mock';
-        case 'MELHOR_ENVIO_ACCESS_TOKEN': return 'TOKEN';
-        case 'DEFAULT_PRODUCT_WIDTH':
-        case 'DEFAULT_PRODUCT_HEIGHT':
-        case 'DEFAULT_PRODUCT_LENGTH':
-        case 'DEFAULT_PRODUCT_WEIGHT': return 1;
-        default: return undefined;
-      }
-    })
-  } as any as ConfigService;
+  it('should fetch address successfully', async () => {
+    const apiData = {
+      cep: '01001-000',
+      logradouro: 'Praça da Sé',
+      localidade: 'São Paulo',
+      uf: 'SP',
+      bairro: ''
+    };
+    mockedAxios.get.mockResolvedValue({ data: apiData });
 
-  const client = new MelhorEnvioClient(mockConfigService) as any;
-  const mockHttp = { post: jest.fn() };
-  client['http'] = mockHttp;
-
-  it('should calculate shipping successfully', async () => {
-    const apiResponse = [{ name: 'PAC', price: 10, delivery_time: 5 }];
-    mockHttp.post.mockResolvedValue({ data: apiResponse });
-
-    const result = await client.calculateShipping('01001000', '02002000');
-    expect(result).toEqual([{ type: 'PAC', price: 10, deliveryTime: '5 dias úteis' }]);
-    expect(mockHttp.post).toHaveBeenCalledWith(
-      '/me/shipment/calculate',
-      expect.objectContaining({
-        from: { postal_code: '01001000' },
-        to: { postal_code: '02002000' }
-      })
-    );
+    const result = await client.getAddress('01001000');
+    expect(result).toEqual({
+      cep: '01001000',
+      street: 'Praça da Sé',
+      city: 'São Paulo',
+      state: 'SP',
+      neighborhood: 'Bairro não especificado'
+    });
+    expect(mockedAxios.get).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json');
   });
 
-  it('should return empty array on error', async () => {
-    mockHttp.post.mockRejectedValue(new Error('Service unavailable'));
-    const result = await client.calculateShipping('00000000', '11111111');
-    expect(result).toEqual([]);
+  it('should throw specific message on invalid CEP', async () => {
+    mockedAxios.get.mockResolvedValue({ data: { erro: true } });
+    await expect(client.getAddress('00000000')).rejects.toThrow('CEP inválido ou não encontrado');
+  });
+
+  it('should throw fallback message on network error', async () => {
+    mockedAxios.get.mockRejectedValue(new Error('Network error'));
+    await expect(client.getAddress('01001000')).rejects.toThrow('Falha temporária na consulta de CEP');
+  });
+
+  it('should throw on unsupported CEP response (missing cep)', async () => {
+    // Simula resposta sem campo cep, CEP possivelmente não suportado
+    mockedAxios.get.mockResolvedValue({ data: {} });
+    await expect(client.getAddress('99999999')).rejects.toThrow('CEP inválido ou não encontrado');
   });
 });
