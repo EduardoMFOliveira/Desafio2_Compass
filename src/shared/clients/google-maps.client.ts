@@ -16,7 +16,6 @@ export class GoogleMapsClient {
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('GOOGLE_MAPS_API_KEY');
-    // Usa axios diretamente para que o jest.mock funcione
     this.http = axios;
   }
 
@@ -58,7 +57,6 @@ export class GoogleMapsClient {
         Math.sin(dLng / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const km = R * c;
-    // Duração aproximada assumindo 50 km/h (em segundos)
     const duration = (km / 50) * 3600;
     return { distance: km, duration };
   }

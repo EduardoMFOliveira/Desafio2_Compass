@@ -51,14 +51,12 @@ export class StoreService {
 
     try {
       const address = await this.viaCEP.getAddress(cep);
-      // Usa getCoordinates para obter lat/lng do usuário
       const userCoords = await this.googleMaps.getCoordinates(`${address.street}, ${address.city}`);
 
       const stores = await this.storeRepository.find();
       const results = await Promise.all(
         stores.map(async store => {
           try {
-            // Define origin e destination como objetos Coordinates
             const origin: Coordinates = { lat: store.latitude, lng: store.longitude };
             const destination: Coordinates = userCoords;
             const { distance, duration } = await this.googleMaps.calculateDistance(origin, destination);

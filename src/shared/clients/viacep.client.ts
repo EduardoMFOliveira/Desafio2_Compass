@@ -16,18 +16,13 @@ export class ViaCEPClient {
   private readonly logger = new Logger(ViaCEPClient.name);
 
   constructor() {
-    // Usa diretamente o axios para facilitar mock em testes
     this.http = axios;
   }
 
   async getAddress(cep: string): Promise<AddressDto> {
     try {
-      // Remove tudo que não for dígito para aceitar formatos como "01.001-000"
       const sanitizedCep = cep.replace(/\D/g, '');
-      // Faz a chamada à API usando apenas números
       const { data } = await this.http.get(`https://viacep.com.br/ws/${sanitizedCep}/json`);
-
-      // Se a resposta indicar erro ou não trouxer campo 'cep', considera inválido
       if (data.erro || typeof data.cep !== 'string') {
         throw new Error('CEP_INVALIDO');
       }
